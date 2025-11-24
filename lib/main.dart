@@ -18,7 +18,7 @@ final List<AssetSong> _assetSongs = [
   AssetSong(
     title: "Lagu Sasak Pertama",
     artist: "Artis Lombok A",
-    assetPath: "assets/audio/lagu_sasak_1.mp3", // PASTIKAN NAMA FILE INI ADA!
+    assetPath: "assets/audio/Zias Band - Ku Harus Pergi.mp3", // PASTIKAN NAMA FILE INI ADA!
   ),
   AssetSong(
     title: "Lagu Sasak Kedua",
