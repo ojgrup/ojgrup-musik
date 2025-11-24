@@ -1,14 +1,39 @@
+# Nama paket aplikasi
+name: tes_musik
+description: Aplikasi Pemutar Musik Offline dengan Assets.
+
+# Batasan Versi Dart (Penting untuk mengatasi Error Exit Code 65)
+environment:
+  # Ini berarti proyek ini kompatibel dengan Dart versi 3.0.0 ke atas, tetapi di bawah 4.0.0.
+  sdk: '>=3.0.0 <4.0.0' 
+
 dependencies:
   flutter:
     sdk: flutter
   
-  # Hanya Just Audio yang diperlukan untuk memutar asset
-  just_audio: ^0.9.36 # Pastikan versi terbaru
+  # Widget Material Design
   cupertino_icons: ^1.0.2
 
+  # Fungsionalitas Memutar Audio (Assets, URL, File)
+  just_audio: ^0.9.36 
+  
+  # Untuk menggabungkan Stream Posisi dan Durasi lagu (untuk Progress Bar)
+  rxdart: ^0.27.7 
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+# Bagian konfigurasi Flutter
 flutter:
+
+  # Wajib diaktifkan untuk menggunakan widget Material Design
   uses-material-design: true
   
-  # DAFTARKAN FOLDER ASSETS DI SINI
+  # Deklarasi Assets (File Musik)
+  # Pastikan folder ini ada di root proyekmu dan berisi file .mp3 atau .wav
   assets:
     - assets/audio/
