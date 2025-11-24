@@ -7,7 +7,6 @@ import 'common.dart';
 class AssetSong {
   final String title;
   final String artist;
-  // assetPath adalah jalur relatif ke file di folder assets
   final String assetPath; 
 
   AssetSong({required this.title, required this.artist, required this.assetPath});
@@ -18,17 +17,17 @@ final List<AssetSong> _assetSongs = [
   AssetSong(
     title: "Lagu Sasak Pertama",
     artist: "Artis Lombok A",
-    assetPath: "assets/audio/Zias Band - Ku Harus Pergi.mp3", // PASTIKAN NAMA FILE INI ADA!
+    assetPath: "assets/audio/lagu_sasak_1.mp3", 
   ),
   AssetSong(
     title: "Lagu Sasak Kedua",
     artist: "Artis Lombok B",
-    assetPath: "assets/audio/lagu_sasak_2.mp3", // PASTIKAN NAMA FILE INI ADA!
+    assetPath: "assets/audio/lagu_sasak_2.mp3", 
   ),
   AssetSong(
     title: "Lagu Sasak Ketiga",
     artist: "Artis Lombok C",
-    assetPath: "assets/audio/lagu_sasak_3.mp3", // PASTIKAN NAMA FILE INI ADA!
+    assetPath: "assets/audio/lagu_sasak_3.mp3", 
   ),
 ];
 
@@ -47,13 +46,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
         brightness: Brightness.dark,
-        // Konfigurasi slider untuk tampilan yang bersih
         sliderTheme: const SliderThemeData(
           trackHeight: 2.0,
           thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.0),
         )
       ),
-      home: const MusicPlayerScreen(songs: _assetSongs),
+      // PERBAIKAN: Hapus 'const' karena _assetSongs bukan konstanta compile-time
+      home: MusicPlayerScreen(songs: _assetSongs),
     );
   }
 }
@@ -69,22 +68,20 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  // 1. Instansiasi Player
   final AudioPlayer _audioPlayer = AudioPlayer();
   int? _currentPlayingIndex;
 
   @override
   void dispose() {
-    _audioPlayer.dispose(); // Wajib untuk membersihkan sumber daya
+    _audioPlayer.dispose();
     super.dispose();
   }
 
-  // 2. Fungsi Memutar Lagu dari Assets
+  // Fungsi Memutar Lagu dari Assets
   Future<void> _playAssetSong(int index) async {
     final song = widget.songs[index];
     
     try {
-      // **Kunci: Menggunakan setAsset()**
       await _audioPlayer.setAsset(song.assetPath); 
       _audioPlayer.play();
       
@@ -99,7 +96,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
   
-  // 3. Fungsi Toggle Play/Pause
+  // Fungsi Toggle Play/Pause
   void _togglePlayPause() {
     if (_audioPlayer.playing) {
       _audioPlayer.pause();
@@ -108,7 +105,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
-  // 4. UI Utama
+  // UI Utama
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,18 +127,17 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                       ? const Icon(Icons.volume_up, color: Colors.blue)
                       : null,
                   onTap: () {
-                    // Logika untuk Play/Pause/Pindah Lagu
                     if (isPlaying) {
-                      _togglePlayPause(); // Jika lagu yang sama di-tap
+                      _togglePlayPause();
                     } else {
-                      _playAssetSong(index); // Putar lagu baru
+                      _playAssetSong(index);
                     }
                   },
                 );
               },
             ),
       
-      // 5. Kontrol Pemutar di Bagian Bawah (Mini-Player)
+      // Kontrol Pemutar di Bagian Bawah (Mini-Player)
       bottomNavigationBar: _currentPlayingIndex != null
           ? MiniPlayerWidget(
               audioPlayer: _audioPlayer,
@@ -247,7 +243,6 @@ class MiniPlayerWidget extends StatelessWidget {
               final duration = positionData?.duration ?? Duration.zero;
               
               double sliderValue = position.inMilliseconds.toDouble();
-              // Batasi agar slider value tidak melebihi durasi
               if (sliderValue > duration.inMilliseconds) {
                 sliderValue = duration.inMilliseconds.toDouble();
               }
@@ -260,9 +255,8 @@ class MiniPlayerWidget extends StatelessWidget {
                     value: sliderValue,
                     activeColor: Colors.blueAccent,
                     inactiveColor: Colors.white38,
-                    // Kita menggunakan onChanged hanya untuk visual, seek dilakukan di onChangeEnd
                     onChanged: (value) { /* Do nothing here */ }, 
-                    onChangeEnd: _onSeek, // Fungsi seek dipanggil saat user selesai menggeser
+                    onChangeEnd: _onSeek,
                   ),
                   
                   // Teks Waktu Lagu
@@ -271,8 +265,8 @@ class MiniPlayerWidget extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(formatDuration(position), style: TextStyle(fontSize: 12)), // Posisi saat ini
-                        Text(formatDuration(duration), style: TextStyle(fontSize: 12)), // Durasi total
+                        Text(formatDuration(position), style: TextStyle(fontSize: 12)), 
+                        Text(formatDuration(duration), style: TextStyle(fontSize: 12)), 
                       ],
                     ),
                   ),
