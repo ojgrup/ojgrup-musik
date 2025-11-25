@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-// Impor file common.dart untuk fungsi helper dan PositionData
+// Impor file-file navigasi dan helper
 import 'common.dart'; 
+import 'splash_screen.dart'; 
+import 'category_screen.dart'; // Diperlukan untuk passing daftar lagu
 
 // --- MODEL DATA LAGU DARI ASSETS ---
 class AssetSong {
@@ -12,12 +14,14 @@ class AssetSong {
   AssetSong({required this.title, required this.artist, required this.assetPath});
 }
 
-// Ganti daftar ini dengan detail dan path file di folder assets/audio/ milikmu!
+// DAFTAR LAGU GLOBAL
+// Daftar ini harus disediakan untuk CategoryScreen, karena CategoryScreen 
+// akan menentukan daftar lagu mana yang akan dikirim ke MusicPlayerScreen.
 final List<AssetSong> _assetSongs = [
   AssetSong(
     title: "Lagu Sasak Pertama",
     artist: "Artis Lombok A",
-    assetPath: "assets/audio/Zias Band - Ku Harus Pergi.mp3", 
+    assetPath: "assets/audio/lagu_sasak_1.mp3", // GANTI SESUAI NAMA FILE-MU!
   ),
   AssetSong(
     title: "Lagu Sasak Kedua",
@@ -29,6 +33,7 @@ final List<AssetSong> _assetSongs = [
     artist: "Artis Lombok C",
     assetPath: "assets/audio/lagu_sasak_3.mp3", 
   ),
+  // Tambahkan lagu-lagu lain di sini
 ];
 
 
@@ -51,16 +56,18 @@ class MyApp extends StatelessWidget {
           thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.0),
         )
       ),
-      // PERBAIKAN: Hapus 'const' karena _assetSongs bukan konstanta compile-time
-      home: MusicPlayerScreen(songs: _assetSongs),
+      // PERBAIKAN NAVIGASI: Mulai dari SplashScreen
+      // Hapus 'const' di MusicPlayerScreen jika kamu menggunakannya di sini.
+      home: const SplashScreen(),
     );
   }
 }
 
-// --- SCREEN UTAMA ---
+// --- SCREEN DAFTAR MUSIK UTAMA ---
 
 class MusicPlayerScreen extends StatefulWidget {
   final List<AssetSong> songs;
+  // Constructor dibuat const karena list songs diterima dari CategoryScreen
   const MusicPlayerScreen({super.key, required this.songs});
 
   @override
@@ -110,7 +117,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("🎵 Musik Offline (Assets)"),
+        title: const Text("🎵 Daftar Lagu"),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: ListView.builder(
@@ -236,7 +243,7 @@ class MiniPlayerWidget extends StatelessWidget {
           
           // Baris 2: Slider Progress Bar dan Waktu
           StreamBuilder<PositionData>(
-            stream: getPositionDataStream(audioPlayer), // Stream dari common.dart
+            stream: getPositionDataStream(audioPlayer),
             builder: (context, snapshot) {
               final positionData = snapshot.data;
               final position = positionData?.position ?? Duration.zero;
