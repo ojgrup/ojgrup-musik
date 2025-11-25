@@ -1,7 +1,8 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
-import 'main.dart'; // Import untuk mengakses AssetSong dan _assetSongs
+// Import list lagu publik (assetSongs)
+import 'main.dart'; 
 
 // Konversi Model AssetSong ke MediaItem
 MediaItem convertSongToMediaItem(AssetSong song) {
@@ -10,7 +11,6 @@ MediaItem convertSongToMediaItem(AssetSong song) {
     album: 'Lagu Sasak',
     title: song.title,
     artist: song.artist,
-    // Kita tidak menggunakan URL gambar, jadi kita kosongkan atau gunakan dummy
     artUri: Uri.parse('https://example.com/cover.jpg'), 
     extras: {'assetPath': song.assetPath},
   );
@@ -21,31 +21,31 @@ MediaItem convertSongToMediaItem(AssetSong song) {
 // ----------------------------------------------------
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final _player = AudioPlayer();
-  final _playlist = ConcatenatingAudioSource(children: []);
+  // Gunakan playlist dengan ConcatenatingAudioSource untuk urutan lagu
+  final _playlist = ConcatenatingAudioSource(children: []); 
+
+  // Getter yang diekspos (untuk common.dart yang membutuhkan posisi JustAudio)
+  AudioPlayer get player => _player;
 
   AudioPlayerHandler() {
-    // 1. Muat Daftar Putar saat Handler dibuat
     _loadInitialPlaylist();
-    
-    // 2. Dengarkan perubahan status pemutar JustAudio dan kirim ke AudioService
     _listenForPlayerStateChanges();
-    
-    // 3. Logika untuk Putar Otomatis (Ganti Lagu Saat Selesai)
     _listenForSequenceStateChanges();
   }
 
   // Muat semua lagu assets ke playlist JustAudio
   Future<void> _loadInitialPlaylist() async {
-    final mediaItems = _assetSongs.map(convertSongToMediaItem).toList();
+    // PERBAIKAN D: Menggunakan assetSongs publik
+    final mediaItems = assetSongs.map(convertSongToMediaItem).toList();
     
     // Konversi MediaItem ke AudioSource
     final audioSources = mediaItems.map((item) => AudioSource.asset(item.id)).toList();
     
-    // Muat playlist ke JustAudio
+    // Set AudioSource dengan ConcatenatingAudioSource
     await _player.setAudioSource(_playlist, initialIndex: 0, initialPosition: Duration.zero);
     await _playlist.addAll(audioSources);
 
-    // Kirim daftar lagu ke AudioService (untuk ditampilkan di Notifikasi)
+    // Kirim daftar lagu ke AudioService
     playbackState.add(playbackState.value.copyWith(controls: [
       MediaControl.skipToPrevious,
       MediaControl.play,
@@ -57,49 +57,55 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     queue.add(mediaItems);
   }
 
-  // --- LOGIKA PUTAR OTOMATIS (GANTI LAGU SAAT SELESAI) ---
+  // Logika untuk Putar Otomatis (Ganti Lagu Saat Selesai)
   void _listenForSequenceStateChanges() {
     _player.sequenceStateStream.listen((sequenceState) {
       if (sequenceState == null) return;
       
-      // Update mediaItem (lagu yang sedang diputar) berdasarkan index saat ini
-      final event = sequenceState.currentSource;
       final index = sequenceState.currentIndex;
 
       if (index != null && index < queue.value.length) {
           mediaItem.add(queue.value[index]);
       }
-      
-      // JustAudio secara default akan pindah ke lagu berikutnya (loopMode: off)
-      // Jika mode repeat di JustAudio diatur ke LoopMode.all, ia akan mengulang playlist
     });
   }
 
   // Logika untuk mengirim status (play/pause/loading) ke Notifikasi
   void _listenForPlayerStateChanges() {
-    _player.playerStateStream.listen((playerState) {
-      final isPlaying = playerState.playing;
-      final processingState = playerState.processingState;
-      
-      if (processingState == ProcessingState.loading || processingState == ProcessingState.buffering) {
-        playbackState.add(playbackState.value.copyWith(
-          controls: [MediaControl.skipToPrevious, MediaControl.pause, MediaControl.skipToNext],
+    // Kombinasikan stream status player JustAudio dan stream posisi
+    Rx.combineLatest2<PlayerState, Duration, PlaybackState>(
+      _player.playerStateStream, 
+      _player.positionStream, // Menggunakan stream posisi JustAudio
+      (playerState, position) {
+        // ... (Logika status tetap sama) ...
+        final isPlaying = playerState.playing;
+        final processingState = playerState.processingState;
+
+        // ... (Kode kontrol sama seperti di perbaikan sebelumnya) ...
+        final controls = [
+          MediaControl.skipToPrevious,
+          isPlaying ? MediaControl.pause : MediaControl.play,
+          MediaControl.skipToNext,
+        ];
+        
+        return playbackState.value.copyWith(
+          controls: controls,
           androidCompactActionIndices: const [0, 1, 2],
-          processingState: AudioProcessingState.loading,
+          processingState: {
+            ProcessingState.idle: AudioProcessingState.idle,
+            ProcessingState.loading: AudioProcessingState.loading,
+            ProcessingState.buffering: AudioProcessingState.buffering,
+            ProcessingState.ready: AudioProcessingState.ready,
+            ProcessingState.completed: AudioProcessingState.completed,
+          }[processingState] ?? AudioProcessingState.idle,
           playing: isPlaying,
-        ));
-      } else if (processingState != ProcessingState.completed) {
-        playbackState.add(playbackState.value.copyWith(
-          controls: [
-            MediaControl.skipToPrevious,
-            isPlaying ? MediaControl.pause : MediaControl.play,
-            MediaControl.skipToNext,
-          ],
-          androidCompactActionIndices: const [0, 1, 2],
-          processingState: AudioProcessingState.ready,
-          playing: isPlaying,
-        ));
+          updatePosition: position, // UPDATE POSISI DI SINI
+          bufferedPosition: _player.bufferedPosition,
+          speed: _player.speed,
+        );
       }
+    ).listen((state) {
+      playbackState.add(state);
     });
   }
   
@@ -123,7 +129,13 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> stop() async {
     await _player.stop();
-    // Berhenti total dari background
     return super.stop();
+  }
+
+  // Override skipToQueueIndex dari QueueHandler
+  @override
+  Future<void> skipToQueueIndex(int index) async {
+    await _player.seek(Duration.zero, index: index);
+    mediaItem.add(queue.value[index]);
   }
 }
