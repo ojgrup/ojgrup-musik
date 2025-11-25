@@ -41,8 +41,8 @@ class AssetSong {
       : id = assetPath;
 }
 
-// DAFTAR LAGU GLOBAL
-final List<AssetSong> _assetSongs = [
+// DAFTAR LAGU GLOBAL (Dibuat PUBLIC agar bisa diakses handler)
+final List<AssetSong> assetSongs = [
   AssetSong(
     title: "Lagu Sasak Pertama",
     artist: "Artis Lombok A",
@@ -92,27 +92,22 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-
-  // Tidak perlu lagi AudioPlayer, kita pakai AudioHandler global
-  // final AudioPlayer _audioPlayer = AudioPlayer(); 
   
-  // State lokal untuk melacak indeks lagu yang sedang diputar di UI
   int? _currentPlayingIndex;
 
   @override
   void initState() {
     super.initState();
-    // Dengarkan perubahan pada AudioHandler untuk mengupdate UI lokal
     _listenToAudioServiceChanges();
   }
   
   void _listenToAudioServiceChanges() {
-    // Dengarkan perubahan index pemutaran dari service (misalnya, setelah next/previous)
+    // Dengarkan perubahan index pemutaran dari service 
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem == null || _audioHandler.queue.value.isEmpty) return;
       
       // Cari index lagu yang sedang diputar berdasarkan ID (assetPath)
-      final index = _audioHandler.queue.value.indexWhere((item) => item.id == mediaItem.id);
+      final index = assetSongs.indexWhere((item) => item.id == mediaItem.id);
       
       if (mounted) {
         setState(() {
@@ -124,17 +119,15 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   @override
   void dispose() {
-    // Jangan dispose handler global, biarkan ia terus berjalan
     super.dispose();
   }
 
   // Fungsi Memutar Lagu
   Future<void> _playSong(int index) async {
-    // Perintah ke AudioHandler untuk pindah ke index tertentu
     if (_audioHandler.queue.value.isEmpty) {
-        // Ini tidak boleh terjadi jika _audioHandler sudah dimuat di main()
         return; 
     }
+    // PERBAIKAN A: Perintah skip ke index di queue.
     await _audioHandler.skipToQueueIndex(index); 
     _audioHandler.play();
   }
@@ -152,7 +145,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   // UI Utama
   @override
   Widget build(BuildContext context) {
-    // Kita gunakan StreamBuilder untuk mendapatkan lagu yang sedang dimainkan dari service
     return StreamBuilder<MediaItem?>(
       stream: _audioHandler.mediaItem,
       builder: (context, snapshot) {
@@ -165,7 +157,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             itemCount: widget.songs.length,
             itemBuilder: (context, index) {
               final song = widget.songs[index];
-              // Cek apakah lagu ini sedang diputar (berdasarkan index lokal)
               final isPlaying = index == _currentPlayingIndex;
               
               return ListTile(
@@ -176,7 +167,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                     ? const Icon(Icons.volume_up, color: Colors.blue)
                     : null,
                 onTap: () {
-                  // Logika untuk Play/Pause/Pindah Lagu
                   if (isPlaying) {
                     _togglePlayPause();
                   } else {
@@ -205,7 +195,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 // --- WIDGET MINI PLAYER (Diadaptasi untuk AudioHandler) ---
 
 class MiniPlayerWidget extends StatelessWidget {
-  // Ganti AudioPlayer dengan AudioHandler
   final AudioHandler audioHandler;
   final AssetSong currentSong; 
   final VoidCallback onTogglePlayPause;
@@ -286,9 +275,9 @@ class MiniPlayerWidget extends StatelessWidget {
           ),
           
           // Baris 2: Slider Progress Bar dan Waktu
-          // Note: Kita menggunakan getPositionDataStream global, namun ia mengambil data dari stream handler
           StreamBuilder<PositionData>(
-            stream: getPositionDataStream(audioHandler.player as AudioPlayer), // Casting AudioHandler's player back to AudioPlayer
+            // PERBAIKAN B: Ganti argumen dengan audioHandler
+            stream: getPositionDataStream(audioHandler),
             builder: (context, snapshot) {
               final positionData = snapshot.data;
               final position = positionData?.position ?? Duration.zero;
