@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart'; 
 import 'package:just_audio/just_audio.dart';
 
-// Import yang dikoreksi
-import 'data_model.dart'; // <--- BARU
+// Import yang dibutuhkan
+import 'data_model.dart'; 
 import 'common.dart'; 
-import 'splash_screen.dart'; 
-import 'audio_player_handler.dart'; // Handler Service
-import 'category_screen.dart'; // Layar navigasi utama
+import 'audio_player_handler.dart'; 
+import 'category_screen.dart'; 
 
 // --- SETUP SERVICE AUDIO GLOBAL ---
 late AudioHandler _audioHandler;
+bool _isAudioServiceInitialized = false; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,9 +28,12 @@ Future<void> main() async {
         androidShowNotificationBadge: true,
       ),
     );
+    _isAudioServiceInitialized = true; 
+    print("✅ AudioService berhasil diinisialisasi.");
   } catch (e, stacktrace) {
     print("❌ KESALAHAN FATAL AUDIO SERVICE: $e");
     print("Stacktrace: $stacktrace");
+    _isAudioServiceInitialized = false;
   }
   
   runApp(const MyApp());
@@ -51,7 +54,29 @@ class MyApp extends StatelessWidget {
           thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.0),
         )
       ),
-      home: const SplashScreen(),
+      // Langsung menuju CategoryScreen jika berhasil
+      home: _isAudioServiceInitialized 
+          ? const CategoryScreen() 
+          : const ErrorOrLoadingScreen(),
+    );
+  }
+}
+
+class ErrorOrLoadingScreen extends StatelessWidget {
+  const ErrorOrLoadingScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text("Memuat data, jika lama/crash, ada error di AudioService."),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -80,7 +105,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem == null || _audioHandler.queue.value.isEmpty) return;
       
-      // Cari index lagu yang sedang diputar berdasarkan ID (assetPath)
       final index = assetSongs.indexWhere((item) => item.id == mediaItem.id);
       
       if (mounted) {
@@ -91,19 +115,16 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     });
   }
 
-  // Fungsi Memutar Lagu
   Future<void> _playSong(int index) async {
     if (_audioHandler.queue.value.isEmpty) {
         return; 
     }
     
-    // Panggil customAction yang sudah diimplementasikan di handler
     await _audioHandler.customAction('skipToQueueIndex', {'index': index}); 
     
     _audioHandler.play();
   }
   
-  // Fungsi Toggle Play/Pause
   void _togglePlayPause() {
     final playing = _audioHandler.playbackState.value.playing;
     if (playing) {
@@ -113,17 +134,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
-  // UI Utama
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<MediaItem?>(
       stream: _audioHandler.mediaItem,
       builder: (context, snapshot) {
         return Scaffold(
-          appBar: AppBar(
-            title: const Text("🎵 Daftar Lagu"),
-            backgroundColor: Colors.blueGrey[900],
-          ),
+          appBar: AppBar(title: const Text("🎵 Daftar Lagu"), backgroundColor: Colors.blueGrey[900]),
           body: ListView.builder(
             itemCount: widget.songs.length,
             itemBuilder: (context, index) {
@@ -134,9 +151,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 leading: const Icon(Icons.music_note, color: Colors.blueAccent),
                 title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text(song.artist, style: TextStyle(color: Colors.white70)),
-                trailing: isPlaying
-                    ? const Icon(Icons.volume_up, color: Colors.blue)
-                    : null,
+                trailing: isPlaying ? const Icon(Icons.volume_up, color: Colors.blue) : null,
                 onTap: () {
                   if (isPlaying) {
                     _togglePlayPause();
@@ -147,8 +162,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               );
             },
           ),
-          
-          // Kontrol Pemutar di Bagian Bawah (Mini-Player)
           bottomNavigationBar: _currentPlayingIndex != null
               ? MiniPlayerWidget(
                   audioHandler: _audioHandler, 
