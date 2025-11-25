@@ -1,13 +1,15 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
-// Import penuh audio_service untuk mendapatkan semua tipe data dan enum
 import 'package:audio_service/audio_service.dart'; 
 import 'package:just_audio/just_audio.dart';
 
-// Impor file-file navigasi, helper, dan service
+// Import yang dikoreksi
+import 'data_model.dart'; // <--- BARU
 import 'common.dart'; 
 import 'splash_screen.dart'; 
-import 'category_screen.dart'; 
 import 'audio_player_handler.dart'; // Handler Service
+import 'category_screen.dart'; // Layar navigasi utama
 
 // --- SETUP SERVICE AUDIO GLOBAL ---
 late AudioHandler _audioHandler;
@@ -15,52 +17,24 @@ late AudioHandler _audioHandler;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 1. Inisialisasi AudioService di background
-  _audioHandler = await AudioService.init(
-    builder: () => AudioPlayerHandler(),
-    config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.example.musicplayer.channel',
-      androidNotificationChannelName: 'Music Playback',
-      androidNotificationOngoing: true,
-      androidNotificationIcon: 'drawable/ic_bg_service_small', 
-      androidShowNotificationBadge: true,
-    ),
-  );
+  try {
+    _audioHandler = await AudioService.init(
+      builder: () => AudioPlayerHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.example.musicplayer.channel',
+        androidNotificationChannelName: 'Music Playback',
+        androidNotificationOngoing: true,
+        androidNotificationIcon: 'drawable/ic_bg_service_small', 
+        androidShowNotificationBadge: true,
+      ),
+    );
+  } catch (e, stacktrace) {
+    print("❌ KESALAHAN FATAL AUDIO SERVICE: $e");
+    print("Stacktrace: $stacktrace");
+  }
   
-  // 2. Jalankan Aplikasi
   runApp(const MyApp());
 }
-
-// --- MODEL DATA LAGU DARI ASSETS ---
-class AssetSong {
-  final String title;
-  final String artist;
-  final String assetPath; 
-  final String id; 
-
-  AssetSong({required this.title, required this.artist, required this.assetPath})
-      : id = assetPath;
-}
-
-// DAFTAR LAGU GLOBAL (PUBLIC)
-final List<AssetSong> assetSongs = [
-  AssetSong(
-    title: "Lagu Sasak Pertama",
-    artist: "Artis Lombok A",
-    assetPath: "assets/audio/Zias Band - Ku Harus Pergi.mp3", 
-  ),
-  AssetSong(
-    title: "Sally Sendiri",
-    artist: "peterpan",
-    assetPath: "assets/audio/Peterpan_Sally_Sendiri.mp3", 
-  ),
-  AssetSong(
-    title: "Kukatakan Dengan Indah",
-    artist: "peterpan",
-    assetPath: "assets/audio/Peterpan_Kukatakan_Dengan_Indah.mp3", 
-  ),
-];
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -82,7 +56,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// --- SCREEN DAFTAR MUSIK UTAMA ---
+// --- MUSIC PLAYER SCREEN ---
 
 class MusicPlayerScreen extends StatefulWidget {
   final List<AssetSong> songs;
@@ -106,6 +80,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem == null || _audioHandler.queue.value.isEmpty) return;
       
+      // Cari index lagu yang sedang diputar berdasarkan ID (assetPath)
       final index = assetSongs.indexWhere((item) => item.id == mediaItem.id);
       
       if (mounted) {
@@ -116,18 +91,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   // Fungsi Memutar Lagu
   Future<void> _playSong(int index) async {
     if (_audioHandler.queue.value.isEmpty) {
         return; 
     }
     
-    // SOLUSI FINAL: Gunakan customAction untuk melewati pemeriksaan tipe statis.
+    // Panggil customAction yang sudah diimplementasikan di handler
     await _audioHandler.customAction('skipToQueueIndex', {'index': index}); 
     
     _audioHandler.play();
@@ -192,22 +162,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 }
 
-
 // --- WIDGET MINI PLAYER ---
-
 class MiniPlayerWidget extends StatelessWidget {
   final AudioHandler audioHandler;
   final AssetSong currentSong; 
   final VoidCallback onTogglePlayPause;
 
-  const MiniPlayerWidget({
-    super.key,
-    required this.audioHandler,
-    required this.currentSong,
-    required this.onTogglePlayPause,
-  });
+  const MiniPlayerWidget({super.key, required this.audioHandler, required this.currentSong, required this.onTogglePlayPause});
 
-  // Fungsi untuk maju/mundur (seek)
   void _onSeek(double value) {
     audioHandler.seek(Duration(milliseconds: value.toInt()));
   }
@@ -220,7 +182,6 @@ class MiniPlayerWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Baris 1: Informasi Lagu & Kontrol Play/Pause
           Row(
             children: [
               Expanded(
@@ -230,24 +191,12 @@ class MiniPlayerWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        currentSong.title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        currentSong.artist,
-                        style: const TextStyle(fontSize: 12, color: Colors.white70),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      Text(currentSong.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(currentSong.artist, style: const TextStyle(fontSize: 12, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
               ),
-              // Kontrol Play/Pause
               StreamBuilder<PlaybackState>(
                 stream: audioHandler.playbackState,
                 builder: (context, snapshot) {
@@ -258,11 +207,7 @@ class MiniPlayerWidget extends StatelessWidget {
                       processingState == AudioProcessingState.buffering) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: SizedBox(
-                        width: 24, 
-                        height: 24, 
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent),
-                      ),
+                      child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent)),
                     );
                   } else {
                     return IconButton(
@@ -275,7 +220,6 @@ class MiniPlayerWidget extends StatelessWidget {
             ],
           ),
           
-          // Baris 2: Slider Progress Bar dan Waktu
           StreamBuilder<PositionData>(
             stream: getPositionDataStream(audioHandler),
             builder: (context, snapshot) {
@@ -300,7 +244,6 @@ class MiniPlayerWidget extends StatelessWidget {
                     onChangeEnd: _onSeek,
                   ),
                   
-                  // Teks Waktu Lagu
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
