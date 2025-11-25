@@ -19,7 +19,8 @@ dependencies:
   
   # Untuk menggabungkan Stream Posisi dan Durasi lagu (untuk Progress Bar)
   rxdart: ^0.27.7 
-
+# Dependency Baru untuk Kontrol Status Bar dan Background Playback
+  audio_service: ^0.18.9
 
 dev_dependencies:
   flutter_test:
