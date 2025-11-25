@@ -50,9 +50,9 @@ final List<AssetSong> assetSongs = [
     assetPath: "assets/audio/Zias Band - Ku Harus Pergi.mp3", 
   ),
   AssetSong(
-    title: "Lagu Sasak Kedua",
-    artist: "Artis Lombok B",
-    assetPath: "assets/audio/lagu_sasak_2.mp3", 
+    title: "Sally Sendiri",
+    artist: "peterpan",
+    assetPath: "assets/audio/Peterpan_Sally_Sendiri.mp3", 
   ),
   AssetSong(
     title: "Lagu Sasak Ketiga",
