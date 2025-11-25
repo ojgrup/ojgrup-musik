@@ -1,7 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
-// Import list lagu publik (assetSongs)
+// Import list lagu publik (assetSongs) dan model AssetSong
 import 'main.dart'; 
 
 // Konversi Model AssetSong ke MediaItem
@@ -11,6 +11,7 @@ MediaItem convertSongToMediaItem(AssetSong song) {
     album: 'Lagu Sasak',
     title: song.title,
     artist: song.artist,
+    // Ganti dengan URI gambar cover art yang valid jika ada
     artUri: Uri.parse('https://example.com/cover.jpg'), 
     extras: {'assetPath': song.assetPath},
   );
@@ -24,7 +25,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   // Gunakan playlist dengan ConcatenatingAudioSource untuk urutan lagu
   final _playlist = ConcatenatingAudioSource(children: []); 
 
-  // Getter yang diekspos (untuk common.dart yang membutuhkan posisi JustAudio)
+  // Getter yang diekspos (digunakan oleh common.dart untuk stream posisi yang detail)
   AudioPlayer get player => _player;
 
   AudioPlayerHandler() {
@@ -35,10 +36,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   // Muat semua lagu assets ke playlist JustAudio
   Future<void> _loadInitialPlaylist() async {
-    // PERBAIKAN D: Menggunakan assetSongs publik
+    // Menggunakan assetSongs publik dari main.dart
     final mediaItems = assetSongs.map(convertSongToMediaItem).toList();
     
-    // Konversi MediaItem ke AudioSource
+    // Konversi MediaItem ke AudioSource (AssetSource untuk local asset)
     final audioSources = mediaItems.map((item) => AudioSource.asset(item.id)).toList();
     
     // Set AudioSource dengan ConcatenatingAudioSource
@@ -53,6 +54,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       MediaControl.stop,
     ]));
     
+    // Set item yang sedang diputar ke lagu pertama
     mediaItem.add(mediaItems[0]);
     queue.add(mediaItems);
   }
@@ -65,6 +67,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       final index = sequenceState.currentIndex;
 
       if (index != null && index < queue.value.length) {
+          // Update MediaItem yang sedang aktif di Notifikasi/UI
           mediaItem.add(queue.value[index]);
       }
     });
@@ -75,13 +78,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     // Kombinasikan stream status player JustAudio dan stream posisi
     Rx.combineLatest2<PlayerState, Duration, PlaybackState>(
       _player.playerStateStream, 
-      _player.positionStream, // Menggunakan stream posisi JustAudio
+      _player.positionStream, 
       (playerState, position) {
-        // ... (Logika status tetap sama) ...
         final isPlaying = playerState.playing;
         final processingState = playerState.processingState;
 
-        // ... (Kode kontrol sama seperti di perbaikan sebelumnya) ...
         final controls = [
           MediaControl.skipToPrevious,
           isPlaying ? MediaControl.pause : MediaControl.play,
@@ -90,7 +91,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         
         return playbackState.value.copyWith(
           controls: controls,
-          androidCompactActionIndices: const [0, 1, 2],
+          // Ini menentukan tombol mana yang akan muncul sebagai tombol ringkas di Android
+          androidCompactActionIndices: const [0, 1, 2], 
           processingState: {
             ProcessingState.idle: AudioProcessingState.idle,
             ProcessingState.loading: AudioProcessingState.loading,
@@ -109,7 +111,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     });
   }
   
-  // --- OVERRIDE FUNGSI KONTROL (Dipanggil dari Notifikasi) ---
+  // --- OVERRIDE FUNGSI KONTROL STANDAR (Dipanggil dari Notifikasi) ---
 
   @override
   Future<void> play() => _player.play();
@@ -135,7 +137,24 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   // Override skipToQueueIndex dari QueueHandler
   @override
   Future<void> skipToQueueIndex(int index) async {
+    // Ini dipanggil oleh customAction di bawah
     await _player.seek(Duration.zero, index: index);
     mediaItem.add(queue.value[index]);
+  }
+  
+  // --- OVERRIDE FUNGSI CUSTOM ACTION (Digunakan untuk Komunikasi Khusus UI) ---
+
+  // PERBAIKAN AKHIR: Tangkap perintah 'skipToQueueIndex' dari main.dart
+  @override
+  Future<void> customAction(String name, [Map<String, dynamic>? arguments]) async {
+    if (name == 'skipToQueueIndex') {
+      final index = arguments?['index'] as int?;
+      if (index != null) {
+        // Panggil metode yang sudah di-override di atas
+        await skipToQueueIndex(index);
+      }
+    }
+    // Pastikan memanggil super.customAction untuk menangani action default
+    return super.customAction(name, arguments);
   }
 }
