@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:audio_service/audio_service.dart';
+import 'package:audio_service/audio_service.dart' show AudioHandler, QueueHandler; 
 import 'package:just_audio/just_audio.dart';
 
 // Impor file-file navigasi, helper, dan service
@@ -126,9 +126,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         return; 
     }
     
-    // PERBAIKAN FINAL: Hapus casting dan panggil langsung melalui _audioHandler
-    // Ini mengandalkan proxy yang dibuat oleh AudioService
-    await _audioHandler.skipToQueueIndex(index); 
+    // PERBAIKAN FINAL: Casting ke QueueHandler
+    await (_audioHandler as QueueHandler).skipToQueueIndex(index); 
     
     _audioHandler.play();
   }
