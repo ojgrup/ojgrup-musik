@@ -1,9 +1,10 @@
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:audio_service/audio_service.dart'; // Import baru
+import 'audio_player_handler.dart'; // Import untuk mengakses player internal
 
 // --- 1. MODEL DATA UNTUK PROGRESS BAR ---
 class PositionData {
-  // Constructor: Nama harus sama dengan nama class, tanpa return type.
   const PositionData( 
     this.position,
     this.bufferedPosition,
@@ -16,16 +17,20 @@ class PositionData {
 }
 
 // --- 2. FUNGSI UNTUK MENGGABUNGKAN STREAM ---
-Stream<PositionData> getPositionDataStream(AudioPlayer audioPlayer) {
+// Menerima AudioHandler dan menggunakan player internalnya (yang diekspos di handler)
+Stream<PositionData> getPositionDataStream(AudioHandler audioHandler) {
+  // Ambil player JustAudio dari handler untuk stream posisi dan buffered
+  final AudioPlayer player = (audioHandler as AudioPlayerHandler).player;
+  
   return Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
-    audioPlayer.positionStream,
-    audioPlayer.bufferedPositionStream,
-    audioPlayer.durationStream,
+    player.positionStream, // Posisi
+    player.bufferedPositionStream, // Posisi Buffer
+    audioHandler.mediaItem.map((item) => item?.duration ?? Duration.zero), // Durasi dari MediaItem
     (position, bufferedPosition, duration) {
       return PositionData(
         position, 
         bufferedPosition, 
-        duration ?? Duration.zero,
+        duration ?? Duration.zero, 
       );
     },
   );
