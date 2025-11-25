@@ -1,6 +1,10 @@
+// lib/category_screen.dart
+
 import 'package:flutter/material.dart';
-// Import class MusicPlayerScreen dan daftar lagu publik
+// Import kelas MusicPlayerScreen
 import 'main.dart'; 
+// Import daftar lagu publik (assetSongs) dari file data_model.dart
+import 'data_model.dart'; 
 
 class CategoryScreen extends StatelessWidget {
   const CategoryScreen({super.key});
@@ -38,10 +42,9 @@ class CategoryScreen extends StatelessWidget {
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white70),
               onTap: () {
-                // PERBAIKAN: Hapus 'const'
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    // Menggunakan assetSongs publik
+                    // Menggunakan assetSongs yang sekarang diimport dari data_model.dart
                     builder: (context) => MusicPlayerScreen(songs: assetSongs), 
                   ),
                 );
