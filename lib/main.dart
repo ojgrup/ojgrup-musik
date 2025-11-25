@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:audio_service/audio_service.dart' show AudioHandler, QueueHandler; 
+// PERBAIKAN IMPORT: Import penuh audio_service untuk mendapatkan semua tipe data dan enum
+import 'package:audio_service/audio_service.dart'; 
 import 'package:just_audio/just_audio.dart';
 
 // Impor file-file navigasi, helper, dan service
@@ -15,6 +16,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // 1. Inisialisasi AudioService di background
+  // Error: 'AudioService' dan 'AudioServiceConfig' sekarang sudah terdefinisi
   _audioHandler = await AudioService.init(
     builder: () => AudioPlayerHandler(),
     config: const AudioServiceConfig(
@@ -102,6 +104,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
   
   void _listenToAudioServiceChanges() {
+    // Error 'MediaItem' hilang karena import penuh
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem == null || _audioHandler.queue.value.isEmpty) return;
       
@@ -126,7 +129,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         return; 
     }
     
-    // PERBAIKAN FINAL: Casting ke QueueHandler
+    // Casting ini (bersama dengan import penuh) akan mengatasi error skipToQueueIndex
     await (_audioHandler as QueueHandler).skipToQueueIndex(index); 
     
     _audioHandler.play();
@@ -246,7 +249,7 @@ class MiniPlayerWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              // Kontrol Play/Pause: Gunakan StreamBuilder pada playbackState
+              // Kontrol Play/Pause: Error 'PlaybackState' dan 'AudioProcessingState' hilang
               StreamBuilder<PlaybackState>(
                 stream: audioHandler.playbackState,
                 builder: (context, snapshot) {
