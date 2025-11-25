@@ -35,13 +35,13 @@ class AssetSong {
   final String title;
   final String artist;
   final String assetPath; 
-  final String id; // Tambahkan ID unik
+  final String id; 
 
   AssetSong({required this.title, required this.artist, required this.assetPath})
       : id = assetPath;
 }
 
-// DAFTAR LAGU GLOBAL (Dibuat PUBLIC agar bisa diakses handler)
+// DAFTAR LAGU GLOBAL (PUBLIC)
 final List<AssetSong> assetSongs = [
   AssetSong(
     title: "Lagu Sasak Pertama",
@@ -102,11 +102,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
   
   void _listenToAudioServiceChanges() {
-    // Dengarkan perubahan index pemutaran dari service 
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem == null || _audioHandler.queue.value.isEmpty) return;
       
-      // Cari index lagu yang sedang diputar berdasarkan ID (assetPath)
       final index = assetSongs.indexWhere((item) => item.id == mediaItem.id);
       
       if (mounted) {
@@ -127,8 +125,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     if (_audioHandler.queue.value.isEmpty) {
         return; 
     }
-    // PERBAIKAN A: Perintah skip ke index di queue.
-    await _audioHandler.skipToQueueIndex(index); 
+    
+    // PERBAIKAN FINAL: Lakukan casting ke QueueHandler agar metode skipToQueueIndex dikenali
+    await (_audioHandler as QueueHandler).skipToQueueIndex(index); 
+    
     _audioHandler.play();
   }
   
@@ -170,7 +170,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                   if (isPlaying) {
                     _togglePlayPause();
                   } else {
-                    _playSong(index); // Perintah ke Service untuk putar
+                    _playSong(index); 
                   }
                 },
               );
@@ -180,7 +180,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           // Kontrol Pemutar di Bagian Bawah (Mini-Player)
           bottomNavigationBar: _currentPlayingIndex != null
               ? MiniPlayerWidget(
-                  audioHandler: _audioHandler, // Kirim handler
+                  audioHandler: _audioHandler, 
                   currentSong: widget.songs[_currentPlayingIndex!],
                   onTogglePlayPause: _togglePlayPause,
                 )
@@ -192,7 +192,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 }
 
 
-// --- WIDGET MINI PLAYER (Diadaptasi untuk AudioHandler) ---
+// --- WIDGET MINI PLAYER ---
 
 class MiniPlayerWidget extends StatelessWidget {
   final AudioHandler audioHandler;
@@ -276,7 +276,6 @@ class MiniPlayerWidget extends StatelessWidget {
           
           // Baris 2: Slider Progress Bar dan Waktu
           StreamBuilder<PositionData>(
-            // PERBAIKAN B: Ganti argumen dengan audioHandler
             stream: getPositionDataStream(audioHandler),
             builder: (context, snapshot) {
               final positionData = snapshot.data;
