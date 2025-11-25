@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"> <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/> 
 
     <application
-        android:label="app_dasar"
+        android:label="app_musik"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
