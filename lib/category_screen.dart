@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// Import class MusicPlayerScreen dan daftar lagu
+// Import class MusicPlayerScreen dan daftar lagu publik
 import 'main.dart'; 
 
 class CategoryScreen extends StatelessWidget {
@@ -38,11 +38,11 @@ class CategoryScreen extends StatelessWidget {
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white70),
               onTap: () {
-                // Untuk demo, semua kategori akan menuju ke daftar lagu yang sama
-                // Di aplikasi nyata, kamu akan mem-filter _assetSongs berdasarkan kategori
+                // PERBAIKAN: Hapus 'const'
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const MusicPlayerScreen(songs: _assetSongs),
+                    // Menggunakan assetSongs publik
+                    builder: (context) => MusicPlayerScreen(songs: assetSongs), 
                   ),
                 );
               },
