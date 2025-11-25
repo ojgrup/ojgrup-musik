@@ -126,8 +126,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         return; 
     }
     
-    // PERBAIKAN FINAL: Lakukan casting ke QueueHandler agar metode skipToQueueIndex dikenali
-    await (_audioHandler as QueueHandler).skipToQueueIndex(index); 
+    // PERBAIKAN FINAL: Hapus casting dan panggil langsung melalui _audioHandler
+    // Ini mengandalkan proxy yang dibuat oleh AudioService
+    await _audioHandler.skipToQueueIndex(index); 
     
     _audioHandler.play();
   }
