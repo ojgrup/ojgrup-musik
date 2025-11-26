@@ -1,3 +1,5 @@
+// android/app/build.gradle (Full Code)
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -20,19 +22,18 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.app_musik"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        
+        // KOREKSI UTAMA UNTUK CRASH AUDIO SERVICE: Set nilai eksplisit
+        minSdk = 21 
+        targetSdk = 33 
+        
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
